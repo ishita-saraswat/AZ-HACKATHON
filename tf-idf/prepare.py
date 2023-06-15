@@ -1,30 +1,41 @@
-# read the index.txt and prepare documents, vocab , idf
+import os
+import re
 
-import chardet
+qData_folder = "Qdata"
 
-def find_encoding(fname):
-    r_file = open(fname, 'rb').read()
-    result = chardet.detect(r_file)
-    charenc = result['encoding']
-    return charenc
+target_str = "Example 1:"
 
-filename = 'Qdata/index.txt'
-my_encoding = find_encoding(filename)
+all_lines = []
 
-with open(filename, 'r', encoding=my_encoding) as f:
-    lines = f.readlines()
+for i in range(1, 1868):
+    file_path = os.path.join(qData_folder, "{}/{}.txt".format(i, i))
 
-def preprocess(document_text):
-    # remove the leading numbers from the string, remove not alpha numeric characters, make everything lowercase
-    terms = [term.lower() for term in document_text.strip().split()[1:]]
+    doc = ""
+    with open(file_path, "r", encoding= 'utf-8', errors = "ignore") as f:
+        lines = f.readlines()
+    
+    for line in lines:
+        if target_str in line:
+            break
+        else:
+            doc += line
+    
+    all_lines.append(doc)
+
+
+def preprocess(text):      # remove problem no, and return a list of lowercase words
+    text = re.sub(r'[^a-zA-Z0-9\s-]', '', text)      # removing non alphanumeric chars
+    terms = [term.lower() for term in text.strip().split()]
+
     return terms
 
-vocab = {}
-documents = []
-for index, line in enumerate(lines):
-    # read statement and add it to the line and then preprocess
-    tokens = preprocess(line)
+vocab = {}          # word : no of docs that word is present in
+documents = []      # all lists, with each list containing words of a document
+
+for (index, line)  in enumerate(all_lines):
+    tokens = preprocess(line)       #list of processed words of this doc
     documents.append(tokens)
+
     tokens = set(tokens)
     for token in tokens:
         if token not in vocab:
@@ -32,42 +43,45 @@ for index, line in enumerate(lines):
         else:
             vocab[token] += 1
 
-# reverse sort the vocab by the values
-vocab = dict(sorted(vocab.items(), key=lambda item: item[1], reverse=True))
+#reverse sort vocab by values (by the no of docs the word is present in)
+vocab = dict( sorted(vocab.items(), key = lambda item : item[1], reverse = True) )
 
-print('Number of documents: ', len(documents))
-print('Size of vocab: ', len(vocab))
-print('Sample document: ', documents[0])
 
-# save the vocab in a text file
-with open('tf-idf/vocab.txt', 'w') as f:
+print("No of documents : ", len(documents))
+print("Size of vocab : ", len(vocab))
+print("Sample document: ", documents[100])
+
+# keys of vocab thus is a set of distinct words across all docs
+# save them in file vocab
+with open("tf-idf/vocab.txt", "w", encoding = 'utf-8', errors = "ignore") as f:
     for key in vocab.keys():
         f.write("%s\n" % key)
 
-# save the idf values in a text file
-with open('tf-idf/idf-values.txt', 'w') as f:
+# save idf values
+with open("tf-idf/idf-values.txt", "w", encoding = 'utf-8', errors = "ignore") as f:
     for key in vocab.keys():
         f.write("%s\n" % vocab[key])
 
-# save the documents in a text file
-with open('tf-idf/documents.txt', 'w') as f:
-    for document in documents:
-        f.write("%s\n" % ' '.join(document))
 
+#save the documents(lists of words for each doc)
+with open("tf-idf/document.txt", "w", encoding = 'utf-8', errors = "ignore") as f:
+    for doc in documents:
+        f.write("%s\n" % doc)
 
-inverted_index = {}
-for index, document in enumerate(documents):
-    for token in document:
+inverted_index = {}         # word : list of index of docs the word is present in.
+                    # inserting word multiple times from same doc too, so that we even get the term freq from here itself
+for (index, doc) in enumerate(documents, start = 1):
+    for token in doc:
         if token not in inverted_index:
             inverted_index[token] = [index]
         else:
             inverted_index[token].append(index)
 
-# save the inverted index in a text file
-with open('tf-idf/inverted-index.txt', 'w') as f:
+
+# save the inverted index in a file
+with open("tf-idf/inverted_index.txt", 'w', encoding = 'utf-8', errors = "ignore") as f:
     for key in inverted_index.keys():
         f.write("%s\n" % key)
-        f.write("%s\n" % ' '.join([str(doc_id) for doc_id in inverted_index[key]]))
-
-
-
+        
+        doc_indexes = ' '.join([str(term) for term in inverted_index[key]])
+        f.write("%s\n" % doc_indexes)

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Codify</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="form">
+        <form method="POST">
+          {{ form.hidden_tag() }}
+          <div class="search-box">
+            {{ form.search.label }} {{ form.search() }} {{ form.submit() }}
+          </div>
+        </form>
+      </div>
+      <div class="results">
+        {% for result in results %}
+        <div class="link-box">
+          <a href="{{ result['Question Link'] }}">{{ result['Question Link'] }}</a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </body>
+</html>
